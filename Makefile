@@ -12,6 +12,14 @@ vcpkg: .FORCE
 baseline: .FORCE
 	$(VCPKG.BIN) x-update-baseline --add-initial-baseline
 
+# dynamic build will allow for debugging capability
+TRIPLET.NAME=x64-linux-dynamic
+ifdef CIRCLECI # static build for CCI
+	TRIPLET.NAME=x64-linux-release
+endif
+libraries: .FORCE
+	export VCPKG_BINARY_SOURCES=$(CACHE) && export VCPKG_BUILD_TYPE=release && $(VCPKG.BIN) install --vcpkg-root=$(VCPKG.ROOT) --enforce-port-checks --host-triplet=$(TRIPLET.NAME) --triplet=$(TRIPLET.NAME)
+
 build:
 	rm -rf $(BUILD.DIR) && mkdir -p $(BUILD.DIR)
 	cd $(BUILD.DIR) && cmake .. && make
