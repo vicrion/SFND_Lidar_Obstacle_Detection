@@ -20,6 +20,11 @@ BUILD.DIR=$(BASE.DIR)/build_cmd
 build: .FORCE
 	rm -rf $(BUILD.DIR) && mkdir -p $(BUILD.DIR)
 	cmake $(BASE.DIR) -B$(BUILD.DIR) -DCMAKE_TOOLCHAIN_FILE=$(VCPKG.ROOT)/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=$(TRIPLET.NAME) -DVCPKG_HOST_TRIPLET=$(TRIPLET.NAME) -DVCPKG_BUILD_TYPE=release -DVCPKG_INSTALLED_DIR=$(BASE.DIR)/vcpkg_installed -DCMAKE_INSTALL_PREFIX=$(INSTALL.DIR) -DBUILD_SHARED_LIBS=0 -DSKIP_TESTS=0 && \
-	cd $(BUILD.DIR) && cmake --build . && VERBOSE=1 make install
+	cd $(BUILD.DIR) && cmake --build .
+
+APP.BIN=$(BUILD.DIR)/environment
+run: .FORCE
+	export LD_LIBRARY_PATH=$(BASE.DIR)/vcpkg_installed/$(TRIPLET.NAME)/lib:$(BASE.DIR)/vcpkg_installed/$(TRIPLET.NAME)/debug/lib:$(INSTALL.DIR)/lib && \
+	$(APP.BIN)
 
 .FORCE:
