@@ -2,7 +2,6 @@ SHELL := /bin/bash
 LINUX_RELEASE := $(shell lsb_release -c | cut -f2)
 
 BASE.DIR=$(PWD)
-BUILD.DIR=$(BASE.DIR)/build
 VCPKG.ROOT=$(BASE.DIR)/vcpkg
 VCPKG.BIN=$(VCPKG.ROOT)/vcpkg
 
@@ -13,15 +12,14 @@ baseline: .FORCE
 	$(VCPKG.BIN) x-update-baseline --add-initial-baseline
 
 # dynamic build will allow for debugging capability
-TRIPLET.NAME=x64-linux-dynamic
-ifdef CIRCLECI # static build for CCI
-	TRIPLET.NAME=x64-linux-release
-endif
+TRIPLET.NAME=x64-linux
 libraries: .FORCE
-	export VCPKG_BINARY_SOURCES=$(CACHE) && export VCPKG_BUILD_TYPE=release && $(VCPKG.BIN) install --vcpkg-root=$(VCPKG.ROOT) --enforce-port-checks --host-triplet=$(TRIPLET.NAME) --triplet=$(TRIPLET.NAME)
+	$(VCPKG.BIN) install --vcpkg-root=$(VCPKG.ROOT) --enforce-port-checks --host-triplet=$(TRIPLET.NAME) --triplet=$(TRIPLET.NAME)
 
-build:
+BUILD.DIR=$(BASE.DIR)/build_cmd
+build: .FORCE
 	rm -rf $(BUILD.DIR) && mkdir -p $(BUILD.DIR)
-	cd $(BUILD.DIR) && cmake .. && make
+	cmake $(BASE.DIR) -B$(BUILD.DIR) -DCMAKE_TOOLCHAIN_FILE=$(VCPKG.ROOT)/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=$(TRIPLET.NAME) -DVCPKG_HOST_TRIPLET=$(TRIPLET.NAME) -DVCPKG_BUILD_TYPE=release -DVCPKG_INSTALLED_DIR=$(BASE.DIR)/vcpkg_installed -DCMAKE_INSTALL_PREFIX=$(INSTALL.DIR) -DBUILD_SHARED_LIBS=0 -DSKIP_TESTS=0 && \
+	cd $(BUILD.DIR) && cmake --build . && VERBOSE=1 make install
 
 .FORCE:

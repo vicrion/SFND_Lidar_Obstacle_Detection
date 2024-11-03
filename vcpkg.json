@@ -1,6 +1,9 @@
 {
   "dependencies": [
-    "pcl",
+    {
+        "name": "pcl",
+        "features": ["visualization"]
+    },
     "spdlog",
     "fmt"
   ],
