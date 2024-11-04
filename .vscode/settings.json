@@ -1,0 +1,14 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build_vscode",
+    "cmake.installPrefix": "${workspaceFolder}/vcpkg_installed/x64-linux",
+    "cmake.configureArgs": [
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DCMAKE_PREFIX_PATH=${workspaceFolder}/vcpkg_installed/x64-linux",
+        "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+    ],
+    "cmake.debugConfig": {
+        "args": [
+        ]
+    },
+}
