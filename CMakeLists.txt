@@ -36,3 +36,5 @@ target_link_libraries (environment
     spdlog::spdlog
     fmt::fmt
 )
+
+add_subdirectory(src/quiz/ransac)
