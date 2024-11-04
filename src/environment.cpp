@@ -2,6 +2,8 @@
 // Create simple 3d highway enviroment using PCL
 // for exploring self-driving car sensors
 
+#include <memory>
+
 #include "sensors/lidar.h"
 #include "render/render.h"
 #include "processPointClouds.h"
@@ -46,6 +48,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
     // TODO:: Create lidar sensor 
+    std::unique_ptr<Lidar> lidarPtr = std::make_unique<Lidar>(cars, 0);
 
     // TODO:: Create point processor
   

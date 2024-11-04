@@ -4,6 +4,8 @@
 #include <ctime>
 #include <chrono>
 
+#include <spdlog/spdlog.h>
+
 const double pi = 3.1415;
 
 struct Ray
@@ -112,11 +114,13 @@ struct Lidar
 				rays.push_back(ray);
 			}
 		}
+		spdlog::info("LIDAR ctor.");
 	}
 
 	~Lidar()
 	{
 		// pcl uses boost smart pointers for cloud pointer so we don't have to worry about manually freeing the memory
+		spdlog::info("LIDAR dtor.");
 	}
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr scan()
