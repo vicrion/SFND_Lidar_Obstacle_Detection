@@ -4,6 +4,8 @@
 #include <ctime>
 #include <chrono>
 
+#include <spdlog/spdlog.h>
+
 const double pi = 3.1415;
 
 struct Ray
@@ -85,22 +87,20 @@ struct Lidar
 	Lidar(std::vector<Car> setCars, double setGroundSlope)
 		: cloud(new pcl::PointCloud<pcl::PointXYZ>()), position(0,0,2.6)
 	{
-		// TODO:: set minDistance to 5 to remove points from roof of ego car
-		minDistance = 0;
+		// minDistance to 5 to remove points from roof of ego car
+		minDistance = 5;
 		maxDistance = 50;
 		resoultion = 0.2;
-		// TODO:: set sderr to 0.2 to get more interesting pcd files
-		sderr = 0.0;
+		// sderr to 0.2 to get more interesting pcd files
+		sderr = 0.2;
 		cars = setCars;
 		groundSlope = setGroundSlope;
 
-		// TODO:: increase number of layers to 8 to get higher resoultion pcd
-		int numLayers = 3;
+		int numLayers = 8;
 		// the steepest vertical angle
 		double steepestAngle =  30.0*(-pi/180);
 		double angleRange = 26.0*(pi/180);
-		// TODO:: set to pi/64 to get higher resoultion pcd
-		double horizontalAngleInc = pi/6;
+		double horizontalAngleInc = pi/64;
 
 		double angleIncrement = angleRange/numLayers;
 
@@ -112,11 +112,13 @@ struct Lidar
 				rays.push_back(ray);
 			}
 		}
+		spdlog::info("LIDAR ctor.");
 	}
 
 	~Lidar()
 	{
 		// pcl uses boost smart pointers for cloud pointer so we don't have to worry about manually freeing the memory
+		spdlog::info("LIDAR dtor.");
 	}
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr scan()
