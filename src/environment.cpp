@@ -47,13 +47,17 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     bool renderScene = false;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
-    // Create lidar sensor 
+    // Create lidar sensor - on heap since there can be many PCLs
     std::unique_ptr<Lidar> lidar = std::make_unique<Lidar>(cars, 0);
     auto cloud = lidar->scan();
     // renderRays(viewer, lidar->position, cloud);
-    renderPointCloud(viewer, cloud, "Simulated");
+    // renderPointCloud(viewer, cloud, "Simulated");
 
-    // TODO:: Create point processor
+    // Create point processor - on stack is ok
+    auto processor = ProcessPointClouds<pcl::PointXYZ>();
+    auto [road, obstacles] = processor.SegmentPlane(cloud, 50, 0.2);
+    renderPointCloud(viewer, obstacles, "Obstacles", Color(1,0,0));
+    renderPointCloud(viewer, road, "Road", Color(0,0,1) ); 
   
 }
 

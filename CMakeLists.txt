@@ -19,7 +19,7 @@ elseif(MSVC)
 endif()
 
 # Required dependencies
-find_package(PCL REQUIRED COMPONENTS common io visualization)
+find_package(PCL REQUIRED COMPONENTS common io visualization segmentation)
 find_package(Boost COMPONENTS filesystem REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
