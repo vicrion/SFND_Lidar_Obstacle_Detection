@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(playback)
 
-set(CXX_FLAGS "-Wall -std=c++17 -Wno-reorder")
+set(CXX_FLAGS "-Wall -std=c++20 -Wno-reorder")
 set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 # Use dynamic linking for faster link times
