@@ -48,6 +48,10 @@ public:
     typename pcl::PointCloud<PointT>::Ptr loadPcd(std::string file);
 
     std::vector<boost::filesystem::path> streamPcd(std::string dataPath);
+
+protected:
+    typename pcl::PointIndices::Ptr ransac3d(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold);
+
   
 };
 #endif /* PROCESSPOINTCLOUDS_H_ */

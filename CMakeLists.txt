@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(playback)
 
-set(CXX_FLAGS "-Wall -std=c++17 -Wno-reorder")
+set(CXX_FLAGS "-Wall -std=c++20 -Wno-reorder")
 set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 # Use dynamic linking for faster link times
@@ -19,10 +19,11 @@ elseif(MSVC)
 endif()
 
 # Required dependencies
-find_package(PCL REQUIRED COMPONENTS common io visualization)
+find_package(PCL REQUIRED COMPONENTS common io visualization segmentation)
 find_package(Boost COMPONENTS filesystem REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 include_directories(${PCL_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})
@@ -35,4 +36,7 @@ target_link_libraries (environment
     ${Boost_LIBRARIES} 
     spdlog::spdlog
     fmt::fmt
+    Eigen3::Eigen
 )
+
+add_subdirectory(src/quiz/ransac)
