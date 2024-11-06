@@ -8,6 +8,7 @@ target_link_libraries (quizRansac
     ${Boost_LIBRARIES} 
     spdlog::spdlog
     fmt::fmt
+    Eigen3::Eigen
 )
 
 

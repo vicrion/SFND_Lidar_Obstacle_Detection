@@ -10,6 +10,7 @@
 #include "../../processPointClouds.cpp"
 
 #include <spdlog/spdlog.h>
+#include <Eigen/Dense>
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData()
 {
@@ -51,7 +52,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData()
 pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData3D()
 {
 	ProcessPointClouds<pcl::PointXYZ> pointProcessor;
-	return pointProcessor.loadPcd("../../../sensors/data/pcd/simpleHighway.pcd");
+	return pointProcessor.loadPcd("../../../../src/sensors/data/pcd/simpleHighway.pcd");
 }
 
 
@@ -65,7 +66,115 @@ pcl::visualization::PCLVisualizer::Ptr initScene()
   	return viewer;
 }
 
-std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
+std::unordered_set<int> Ransac3D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
+{
+	std::unordered_set<int> inliersResult;
+	srand(time(NULL));
+
+	const int SSET_SIZE = 3; // min 3 points to fit the plane in
+	if (cloud->size()<= SSET_SIZE){
+		spdlog::error("The cloud size={} is too small for RANSAC3.", cloud->size() );
+		return {};
+	}
+
+	auto getRandomSet = [&]() 
+	{
+		std::unordered_set<int> subset;
+
+		while(subset.size() < SSET_SIZE){
+			int i = rand() % cloud->size();
+			subset.insert(i);
+		}
+
+		auto it = subset.begin();
+		int first = *it;
+		++it;
+		int second = *it;
+		++it;
+		int third = *it;
+
+		auto p1 = cloud->at(first);
+		auto p2 = cloud->at(second);	
+		auto p3 = cloud->at(third);			
+
+		return std::make_tuple(p1, p2, p3);
+	};
+
+	auto getPlaneEq = [&](const pcl::PointXYZ &point1, const pcl::PointXYZ &point2, const pcl::PointXYZ &point3)
+	{
+		Eigen::Vector3f p1(point1.x, point1.y, point1.z);
+		Eigen::Vector3f p2(point2.x, point2.y, point2.z);
+		Eigen::Vector3f p3(point3.x, point3.y, point3.z);
+
+		Eigen::Vector3f v1 = p2 - p1;
+		Eigen::Vector3f v2 = p3 - p1;
+
+		Eigen::Vector3f normal = v1.cross(v2);
+		normal.normalize();
+
+		// Plane equation: Ax + By + Cz + D = 0
+		float A = normal.x();
+		float B = normal.y();
+		float C = normal.z();
+		float D = -(A * p1.x() + B * p1.y() + C * p1.z());
+
+		return pcl::PointXYZI(A,B,C,D);
+	};
+
+	auto getDistance = [](const pcl::PointXYZI& plane, const pcl::PointXYZ& point)
+	{
+		float div = std::sqrt(plane.x*plane.x + plane.y*plane.y + plane.z*plane.z);
+
+		if (std::fabs(div) < 1e-3){
+			return std::numeric_limits<float>::max();
+		}
+
+		float d = std::fabs(plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.intensity) / div;
+		
+		return d;
+	};
+	
+	auto getNumInliers = [&](const pcl::PointXYZI& plane)
+	{
+		int numIn = 0;
+		for (unsigned int i=0; i<cloud->size(); ++i){
+			if ( getDistance(plane, cloud->at(i)) <= distanceTol ){
+				numIn++;
+			}
+		}
+		return numIn;
+	};
+
+	int numMaxIn = 0;
+	pcl::PointXYZI bestPlane;
+	while(maxIterations--){
+		// randomly sample subset:
+		auto [p1, p2, p3] = getRandomSet();
+		
+		// fit plane:
+		auto plane = getPlaneEq(p1, p2, p3);
+
+		auto numIn = getNumInliers(plane);
+		numMaxIn = std::max(numIn, numMaxIn);
+
+		if (numMaxIn == numIn){
+			bestPlane = plane;
+		}
+	}
+
+	// Return indicies of inliers from fitted line with most inliers
+	for (unsigned int i=0; i<cloud->size(); ++i){
+		if (getDistance(bestPlane, cloud->at(i)) <= distanceTol ){
+			inliersResult.insert(int(i));
+		}
+	}
+
+	spdlog::info("Completed Ransac 3d with cloud of size={}, best in={}, output size={}.", cloud->size(), numMaxIn, inliersResult.size());
+
+	return inliersResult;
+}
+
+std::unordered_set<int> Ransac2D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
 {
 	std::unordered_set<int> inliersResult;
 	srand(time(NULL));
@@ -85,10 +194,7 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 
 		while(subset.size() < subsetSz){
 			int i = min + rand() % (( max + 1 ) - min);
-
-			if (!subset.contains(i)){
-				subset.insert(i);
-			}
+			subset.insert(i);
 		}
 
 		assert(subset.size() == subsetSz);
@@ -158,6 +264,7 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 		}
 	}
 	spdlog::info("Num inliers: {}.", numMaxIn);
+
 	// Return indicies of inliers from fitted line with most inliers
 	for (unsigned int i=0; i<cloud->size(); ++i){
 		if (getDistance(bestLine, cloud->at(i)) <= distanceTol ){
@@ -176,9 +283,8 @@ int main ()
 	pcl::visualization::PCLVisualizer::Ptr viewer = initScene();
 
 	// Create data
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData();
-	
-	std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData3D();
+	std::unordered_set<int> inliers = Ransac3D(cloud, 50, 0.5);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr  cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
