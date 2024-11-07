@@ -50,10 +50,41 @@ struct KdTree
 	std::vector<int> search(std::vector<float> target, float distanceTol)
 	{
 		std::vector<int> ids;
+		search2d(root, 0, target, distanceTol, ids);
+
 		return ids;
 	}
 	
 protected:
+	void search2d(Node* current, int level, const std::vector<float>& target, const float distanceTol, std::vector<int>& ids)
+	{
+		if (!current) return;
+
+		spdlog::info("Checking id={}.", current->id);
+
+		if (isWithin(target, current->point, distanceTol)) {
+			ids.push_back(current->id);
+			spdlog::info("Pushing id={}.", current->id);
+		}
+
+		int coordinate = level%target.size();
+
+		if ( target.at(coordinate) - distanceTol < current->point.at(coordinate) ){
+			search2d(current->left, level+1, target, distanceTol, ids);
+		}
+		if ( target.at(coordinate) + distanceTol > current->point.at(coordinate) ){
+			search2d(current->right, level+1, target, distanceTol, ids);
+		}
+	}
+
+	bool isWithin(const std::vector<float>& target, const std::vector<float>& point, const float distanceTol)
+	{
+		assert(target.size() == point.size());
+		auto dx = target.at(0) -point.at(0); 
+		auto dy = target.at(1) - point.at(1);
+		return (dx*dx + dy*dy) < (distanceTol*distanceTol);
+	}
+
 	void insert2d(Node*& node, int level, const std::vector<float>& point, int id)
 	{
 		if (node == nullptr)
