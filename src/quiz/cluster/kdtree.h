@@ -3,6 +3,8 @@
 
 #include "../../render/render.h"
 
+#include <spdlog/spdlog.h>
+
 
 // Structure to represent node of kd tree
 struct Node
@@ -33,6 +35,7 @@ struct KdTree
 
 	~KdTree()
 	{
+		spdlog::info("KD tree: dtor.");
 		delete root;
 	}
 

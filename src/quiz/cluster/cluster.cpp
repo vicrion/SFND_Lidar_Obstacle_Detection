@@ -5,6 +5,8 @@
 #include "../../render/box.h"
 #include <chrono>
 #include <string>
+#include <memory>
+
 #include "kdtree.h"
 
 // Arguments:
@@ -18,7 +20,7 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
   	viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0, 0, 0, "window");
   	return viewer;
 }
 
@@ -26,7 +28,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData(std::vector<std::vector<float>> p
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
   	
-  	for(int i = 0; i < points.size(); i++)
+  	for(unsigned int i = 0; i < points.size(); i++)
   	{
   		pcl::PointXYZ point;
   		point.x = points[i][0];
@@ -104,10 +106,12 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-	KdTree* tree = new KdTree;
+	std::unique_ptr<KdTree> tree = std::make_unique<KdTree>();
   
-    for (int i=0; i<points.size(); i++) 
-    	tree->insert(points[i],i); 
+    for (unsigned int i=0; i<points.size(); i++) {
+		tree->insert(points[i], i);
+	}
+    	
 
   	int it = 0;
   	render2DTree(tree->root,viewer,window, it);
@@ -121,7 +125,7 @@ int main ()
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
   	//
-  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree.get(), 3.0);
   	//
   	auto endTime = std::chrono::steady_clock::now();
   	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);

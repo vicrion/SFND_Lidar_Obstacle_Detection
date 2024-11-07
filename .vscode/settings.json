@@ -1,5 +1,6 @@
 {
     "cmake.generator": "Ninja",
+    "cmake.buildArgs": ["-j8"],
     "cmake.sourceDirectory": "${workspaceFolder}",
     "cmake.buildDirectory": "${workspaceFolder}/build_vscode",
     "cmake.installPrefix": "${workspaceFolder}/vcpkg_installed/x64-linux",
