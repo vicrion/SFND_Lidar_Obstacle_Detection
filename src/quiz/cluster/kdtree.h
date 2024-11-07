@@ -20,8 +20,9 @@ struct Node
 
 	~Node()
 	{
-		delete left;
-		delete right;
+		spdlog::info("Node={} DTOR.", id);
+		if (left != nullptr) delete left;
+		if (right != nullptr) delete right;
 	}
 };
 
@@ -39,10 +40,9 @@ struct KdTree
 		delete root;
 	}
 
-	void insert(std::vector<float> point, int id)
+	void insert(const std::vector<float>& point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
+		insert2d(root, 0, point, id);
 
 	}
 
@@ -53,6 +53,30 @@ struct KdTree
 		return ids;
 	}
 	
+protected:
+	void insert2d(Node*& node, int level, const std::vector<float>& point, int id)
+	{
+		if (node == nullptr)
+		{
+			spdlog::info("Inserting Node={}.", id);
+			node = new Node(point, id);
+		}
+		else 
+		{
+			int idx = level % 2;
+			assert(idx < int(point.size()));
+			assert(idx < int(node->point.size()));
+
+			if (point.at(idx) < node->point.at(idx)  )
+			{
+				insert2d(node->left, level+1, point, id);
+			}
+			else 
+			{
+				insert2d(node->right, level+1, point, id);
+			}
+		}
+	}
 
 };
 
