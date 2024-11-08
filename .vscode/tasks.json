@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "CMake Build",
+        "type": "shell",
+        "command": "cmake --build ${workspaceFolder}/build_vscode -j8 && paplay /usr/share/sounds/freedesktop/stereo/complete.oga",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+  
