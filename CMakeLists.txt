@@ -40,3 +40,4 @@ target_link_libraries (environment
 )
 
 add_subdirectory(src/quiz/ransac)
+add_subdirectory(src/quiz/cluster)

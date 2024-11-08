@@ -5,6 +5,10 @@
 #include "../../render/box.h"
 #include <chrono>
 #include <string>
+#include <stack>
+#include <memory>
+#include <assert.h>
+
 #include "kdtree.h"
 
 // Arguments:
@@ -18,7 +22,7 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
   	viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0, 0, 0, "window");
   	return viewer;
 }
 
@@ -26,7 +30,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData(std::vector<std::vector<float>> p
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
   	
-  	for(int i = 0; i < points.size(); i++)
+  	for(unsigned int i = 0; i < points.size(); i++)
   	{
   		pcl::PointXYZ point;
   		point.x = points[i][0];
@@ -77,10 +81,54 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
-
-	// TODO: Fill out this function to return list of indices for each cluster
-
 	std::vector<std::vector<int>> clusters;
+	std::vector<bool> processed(points.size(), false);
+
+	auto proximity = [&](int id, std::vector<bool> &processed, std::vector<int> &cluster)
+	{
+		assert(id < int(processed.size()));
+
+		// Initialize a stack for iterative traversal
+		std::stack<int> to_visit;
+		to_visit.push(id);
+
+		while (!to_visit.empty())
+		{
+			int current = to_visit.top();
+			to_visit.pop();
+
+			if (processed[current])
+			{
+				continue; // Skip if already processed
+			}
+
+			processed[current] = true;
+			cluster.push_back(current);
+
+			// Get all nearby points
+			std::vector<int> nearby = tree->search(points.at(current), distanceTol);
+			for (auto n : nearby)
+			{
+				assert(n < int(processed.size()));
+				if (!processed[n])
+				{
+					to_visit.push(n);
+				}
+			}
+		}
+	};
+
+	for (unsigned int i=0; i<points.size(); ++i){
+		if (!processed[i]){
+			std::vector<int> cluster;
+			cluster.push_back(i);
+			
+			proximity(i, processed, cluster);
+
+			// add to a list of all clusters
+			clusters.push_back(cluster);
+		}
+	}
  
 	return clusters;
 
@@ -104,16 +152,18 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-	KdTree* tree = new KdTree;
+	std::unique_ptr<KdTree> tree = std::make_unique<KdTree>();
   
-    for (int i=0; i<points.size(); i++) 
-    	tree->insert(points[i],i); 
+    for (unsigned int i=0; i<points.size(); i++) {
+		tree->insert(points[i], i);
+	}
+    	
 
   	int it = 0;
   	render2DTree(tree->root,viewer,window, it);
   
   	std::cout << "Test Search" << std::endl;
-  	std::vector<int> nearby = tree->search({-6,7},3.0);
+  	std::vector<int> nearby = tree->search({-6,7}, 3.0);
   	for(int index : nearby)
       std::cout << index << ",";
   	std::cout << std::endl;
@@ -121,7 +171,7 @@ int main ()
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
   	//
-  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree.get(), 3.0);
   	//
   	auto endTime = std::chrono::steady_clock::now();
   	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);

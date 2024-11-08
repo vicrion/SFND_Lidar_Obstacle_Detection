@@ -56,9 +56,26 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // Create point processor - on stack is ok
     auto processor = ProcessPointClouds<pcl::PointXYZ>();
     auto [road, obstacles] = processor.SegmentPlane(cloud, 50, 0.2);
-    renderPointCloud(viewer, obstacles, "Obstacles", Color(1,0,0));
-    renderPointCloud(viewer, road, "Road", Color(0,0,1) ); 
-  
+    // renderPointCloud(viewer, obstacles, "Obstacles", Color(1,0,0));
+    // renderPointCloud(viewer, road, "Road", Color(0,0,1) );
+
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters = processor.Clustering(obstacles, 1.0, 3, 30);
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1, 0, 0), Color(0, 1, 0), Color(0, 0, 1)};
+
+    for (auto cluster : clusters)
+    {
+        spdlog::info("Cluster size={}.", cluster->size() );
+        
+        processor.numPoints(cluster);
+        renderPointCloud(viewer, cluster, "obstCloud" + std::to_string(clusterId), colors[clusterId % colors.size() ]);
+        
+        Box box = processor.BoundingBox(cluster);
+        renderBox(viewer, box, clusterId, colors[clusterId % colors.size() ]);
+        
+        clusterId++;
+    }
 }
 
 
