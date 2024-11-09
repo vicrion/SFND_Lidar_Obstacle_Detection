@@ -88,7 +88,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer,
         return;
     }
 
-    auto filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.3,
+    auto filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.35,
                                                       Eigen::Vector4f(-18, -6, -2, 1), 
                                                       Eigen::Vector4f(30, 6, 1, 1));
     // renderPointCloud(viewer, filteredCloud, "inputCloud");
@@ -115,8 +115,10 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer,
         
         clusterId++;
     }
-    
-    
+
+    // render EGO location
+    Car egoCar( Vect3(0,0,-1.5), Vect3(4,2,2), Color(0.5, 0.8, 0.2), "egoCar");
+    egoCar.render(viewer);
 }
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
