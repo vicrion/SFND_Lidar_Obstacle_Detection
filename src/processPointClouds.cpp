@@ -4,10 +4,10 @@
 
 #include <unordered_set>
 #include <functional>
+#include <stack>
 
 #include <spdlog/spdlog.h>
 #include <Eigen/Dense>
-
 
 //constructor:
 template<typename PointT>
@@ -119,44 +119,73 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
 {
-
-    // Time clustering process
     auto startTime = std::chrono::steady_clock::now();
-
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
-    // Perform euclidean clustering to group detected obstacles
-    // Creating the KdTree object for the search method of the extraction
-    typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
-    tree->setInputCloud(cloud);
+    std::unique_ptr<KdTree> tree = std::make_unique<KdTree>();
+    tree->insert<PointT>(cloud);
 
-    std::vector<pcl::PointIndices> cluster_indices;
-    pcl::EuclideanClusterExtraction<PointT> ec;
-    ec.setClusterTolerance(clusterTolerance);
-    ec.setMinClusterSize(minSize);
-    ec.setMaxClusterSize(maxSize);
-    ec.setSearchMethod(tree);
-    ec.setInputCloud(cloud);
-    ec.extract(cluster_indices);
+    std::vector<bool> processed(cloud->size(), false);
 
-    // copy to return type
-    for (const auto &cluster : cluster_indices)
-    {
-        typename pcl::PointCloud<PointT>::Ptr cloud_cluster(new pcl::PointCloud<PointT> );
-        for (const auto &idx : cluster.indices)
-        {
-            cloud_cluster->push_back((*cloud)[idx]);
-        } //*
-        cloud_cluster->width = cloud_cluster->size();
-        cloud_cluster->height = 1;
-        cloud_cluster->is_dense = true;
+    auto proximity = [&](int id, std::vector<bool>& processed, std::vector<int>& cluster)
+	{
+		assert(id < int(processed.size()));
 
-        clusters.push_back(cloud_cluster);
-    }
+		// Initialize a stack for iterative traversal
+		std::stack<int> to_visit;
+		to_visit.push(id);
+
+		while (!to_visit.empty())
+		{
+			int current = to_visit.top();
+			to_visit.pop();
+
+			if (processed[current])
+			{
+				continue; // Skip if already processed
+			}
+
+			processed[current] = true;
+			cluster.push_back(current);
+
+			// Get all nearby points
+			std::vector<int> nearby = tree->search<PointT>(cloud->points.at(current), clusterTolerance);
+			for (auto n : nearby)
+			{
+				assert(n < int(processed.size()));
+				if (!processed[n])
+				{
+					to_visit.push(n);
+				}
+			}
+		}
+	};
+
+    for (unsigned int i=0; i<cloud->size(); ++i){
+		if (!processed[i]){
+			std::vector<int> cluster;
+			cluster.push_back(i);
+			proximity(i, processed, cluster);
+
+            if (int(cluster.size()) >= minSize && int(cluster.size()) <= maxSize)
+            {
+                // clusters.push_back(cluster);
+                typename pcl::PointCloud<PointT>::Ptr cloudCluster(new pcl::PointCloud<PointT> );
+                for (const auto& idx : cluster){
+                    cloudCluster->push_back((*cloud)[idx]);
+                }
+                cloudCluster->width = cloudCluster->size();
+                cloudCluster->height = 1;
+                cloudCluster->is_dense = true;
+
+                clusters.push_back(cloudCluster);
+            }
+		}
+	}
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+    spdlog::info("Clustering={}(msec) for num clusters={}.", elapsedTime.count(), clusters.size());
 
     return clusters;
 }

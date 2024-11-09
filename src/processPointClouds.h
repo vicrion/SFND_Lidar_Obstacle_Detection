@@ -21,6 +21,7 @@
 #include <boost/filesystem.hpp>
 
 #include "render/box.h"
+#include "kdtree3d.h"
 
 template<typename PointT>
 class ProcessPointClouds {
@@ -51,7 +52,5 @@ public:
 
 protected:
     typename pcl::PointIndices::Ptr ransac3d(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold);
-
-  
 };
 #endif /* PROCESSPOINTCLOUDS_H_ */
