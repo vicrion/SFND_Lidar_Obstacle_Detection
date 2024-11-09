@@ -2,6 +2,8 @@
 #define KDTREE3D_H
 
 #include <vector>
+#include <algorithm>
+#include <stack>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/common.h>
@@ -41,10 +43,12 @@ struct KdTree
     template <typename TPoint>
     void insert(const typename pcl::PointCloud<TPoint>::Ptr cloud)
     {
-        for (unsigned int i=0; i<cloud->size(); ++i){
-            std::vector<float> point{cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
-            insert(point, i);
-        }
+		insertBalanced<TPoint>(cloud, 0, cloud->size() - 1, 0, root);
+
+        // for (unsigned int i=0; i<cloud->size(); ++i){
+        //     std::vector<float> point{cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+        //     insert(point, i);
+        // }
     }
 
 	void insert(const std::vector<float>& point, int id)
@@ -101,6 +105,31 @@ protected:
         }
 
 		return dK < (distanceTol*distanceTol);
+	}
+
+	template <typename TPoint>
+	void insertBalanced(const typename pcl::PointCloud<TPoint>::Ptr cloud, int start, int end, int depth, Node*& node)
+	{
+		if (start > end) return;
+
+		int axis = depth % 3; // Cycle through x, y, z axes
+		int mid = start + (end - start) / 2;
+
+		// Sort the range [start, end] by the selected axis
+		std::sort(cloud->points.begin() + start, cloud->points.begin() + end + 1,
+			[axis](const TPoint &a, const TPoint &b) {
+				if (axis == 0) return a.x < b.x;
+				else if (axis == 1) return a.y < b.y;
+				else return a.z < b.z;
+			});
+
+		// Create a new node at the median point
+		std::vector<float> point{cloud->points[mid].x, cloud->points[mid].y, cloud->points[mid].z};
+		node = new Node(point, mid);
+
+		// Recursively insert left and right halves
+		insertBalanced<TPoint>(cloud, start, mid - 1, depth + 1, node->left);
+		insertBalanced<TPoint>(cloud, mid + 1, end, depth + 1, node->right);
 	}
 
 	void insertKd(Node*& node, int level, const std::vector<float>& point, int id)
