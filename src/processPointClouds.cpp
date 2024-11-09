@@ -138,11 +138,11 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     // Perform euclidean clustering to group detected obstacles
     // Creating the KdTree object for the search method of the extraction
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+    typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
     tree->setInputCloud(cloud);
 
     std::vector<pcl::PointIndices> cluster_indices;
-    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    pcl::EuclideanClusterExtraction<PointT> ec;
     ec.setClusterTolerance(clusterTolerance);
     ec.setMinClusterSize(minSize);
     ec.setMaxClusterSize(maxSize);
@@ -264,7 +264,7 @@ typename pcl::PointIndices::Ptr ProcessPointClouds<PointT>::ransac3d(typename pc
 		return std::make_tuple(p1, p2, p3);
 	};
 
-	auto getPlaneEq = [&](const pcl::PointXYZ &point1, const pcl::PointXYZ &point2, const pcl::PointXYZ &point3)
+	auto getPlaneEq = [&](const PointT& point1, const PointT& point2, const PointT& point3)
 	{
 		Eigen::Vector3f p1(point1.x, point1.y, point1.z);
 		Eigen::Vector3f p2(point2.x, point2.y, point2.z);
@@ -285,7 +285,7 @@ typename pcl::PointIndices::Ptr ProcessPointClouds<PointT>::ransac3d(typename pc
 		return pcl::PointXYZI(A,B,C,D);
 	};
 
-	auto getDistance = [](const pcl::PointXYZI& plane, const pcl::PointXYZ& point)
+	auto getDistance = [](const pcl::PointXYZI& plane, const PointT& point)
 	{
 		float div = std::sqrt(plane.x*plane.x + plane.y*plane.y + plane.z*plane.z);
 

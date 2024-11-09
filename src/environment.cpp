@@ -86,10 +86,35 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer)
 
     auto pointProcessorI = std::make_unique<ProcessPointClouds<pcl::PointXYZI>>();
     pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
-    auto filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.25,
-                                                      Eigen::Vector4f(-20, -10, -2, 1), 
-                                                      Eigen::Vector4f(45, 10, 2, 1));
-    renderPointCloud(viewer, filteredCloud, "inputCloud");
+    auto filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.3,
+                                                      Eigen::Vector4f(-20, -7, -2, 1), 
+                                                      Eigen::Vector4f(45, 7, 2, 1));
+    // renderPointCloud(viewer, filteredCloud, "inputCloud");
+
+    // separate road plane from anything else using 3d ransac
+    auto [road, obstacles] = pointProcessorI->SegmentPlane(filteredCloud, 50, 0.3);
+    renderPointCloud(viewer, obstacles, "Obstacles", Color(1,1,1));
+    renderPointCloud(viewer, road, "Road", Color(0.25,0.25,0.25) );
+
+    // cluster the "obstacles"
+    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> clusters = pointProcessorI->Clustering(obstacles, 0.75, 20, 333);
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1, 1, 0), Color(0, 1, 1), Color(1, 0, 1)};
+
+    for (auto cluster : clusters)
+    {
+        spdlog::info("Cluster size={}.", cluster->size() );
+        
+        renderPointCloud(viewer, cluster, "obstCloud" + std::to_string(clusterId), colors[clusterId % colors.size() ]);
+        
+        Box box = pointProcessorI->BoundingBox(cluster);
+        renderBox(viewer, box, clusterId, colors[clusterId % colors.size() ]);
+        
+        clusterId++;
+    }
+    
+    
 }
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
