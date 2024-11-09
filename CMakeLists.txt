@@ -25,7 +25,7 @@ find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
-include_directories(${PCL_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 link_directories(${PCL_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS} ${Boost_DEFINITIONS})
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")

@@ -20,7 +20,6 @@ struct Node
 
 	~Node()
 	{
-		spdlog::info("Node={} DTOR.", id);
 		if (left != nullptr) delete left;
 		if (right != nullptr) delete right;
 	}
@@ -36,14 +35,12 @@ struct KdTree
 
 	~KdTree()
 	{
-		spdlog::info("KD tree: dtor.");
 		delete root;
 	}
 
 	void insert(const std::vector<float>& point, int id)
 	{
 		insert2d(root, 0, point, id);
-
 	}
 
 	// return a list of point ids in the tree that are within distance of target
