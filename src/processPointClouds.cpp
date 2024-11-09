@@ -34,10 +34,12 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
 
     // Do voxel grid point reduction and region based filtering
     typename pcl::PointCloud<PointT>::Ptr cloudSampled(new pcl::PointCloud<PointT>() );
-    pcl::VoxelGrid<PointT> sor;
-    sor.setInputCloud(cloud);
-    sor.setLeafSize(filterRes, filterRes, filterRes);
-    sor.filter(*cloudSampled);
+    typename pcl::VoxelGrid<PointT>::Ptr sor(new pcl::VoxelGrid<PointT>() );
+    sor->setInputCloud(cloud);
+    sor->setLeafSize(filterRes, filterRes, filterRes);
+    sor->filter(*cloudSampled);
+    auto endTimeSampled = std::chrono::steady_clock::now();
+    auto elapsedTimeSampled = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeSampled - startTime);
 
     // region based filter using crop box filter
     typename pcl::PointCloud<PointT>::Ptr cloudFiltered(new pcl::PointCloud<PointT>() );
@@ -46,6 +48,8 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     cropbox.setMax(maxPoint);
     cropbox.setInputCloud(cloudSampled);
     cropbox.filter(*cloudFiltered);
+    auto endTimeFiltered = std::chrono::steady_clock::now();
+    auto elapsedTimeFiltered = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeFiltered - endTimeSampled);
 
     // filter out roof points
     pcl::IndicesPtr cropIndices(new std::vector<int>);
@@ -61,10 +65,14 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     extract.setIndices(cropIndices);
     extract.setNegative(true);
     extract.filter(*cloudClean);
+    auto endTimeRoof = std::chrono::steady_clock::now();
+    auto elapsedTimeRoof = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeRoof - endTimeFiltered);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
+
+    spdlog::info("Filtering total={}(msec), down-sampling={}(msec), cropbox={}(msec), roof={}(msec).",
+                 elapsedTime.count(), elapsedTimeSampled.count(), elapsedTimeFiltered.count(), elapsedTimeRoof.count() );
 
     return cloudClean;
 }
@@ -99,30 +107,11 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto startTime = std::chrono::steady_clock::now();
 
     auto inliers = ransac3d(cloud, maxIterations, distanceThreshold);
-
-	// pcl::PointIndices::Ptr inliers(new pcl::PointIndices ());  
-    // // find inliers for the cloud.
-    // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
-    // // Create the segmentation object
-    // pcl::SACSegmentation<PointT> seg;
-    // // Optional
-    // seg.setOptimizeCoefficients(true);
-    // // Mandatory
-    // seg.setModelType(pcl::SACMODEL_PLANE);
-    // seg.setMethodType(pcl::SAC_RANSAC);
-    // seg.setMaxIterations(maxIterations);
-    // seg.setDistanceThreshold(distanceThreshold);
-
-    // seg.setInputCloud (cloud);
-    // seg.segment (*inliers, *coefficients);
-    // if (inliers->indices.size () == 0)
-    // {
-    //     spdlog::error("Could not estimate a planar model for the given dataset.");
-    // }
     
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
+    spdlog::info("Plane segmentation={}(msec).", elapsedTime.count());
+    
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers, cloud);
     return segResult;
 }
@@ -327,7 +316,7 @@ typename pcl::PointIndices::Ptr ProcessPointClouds<PointT>::ransac3d(typename pc
 	}
 
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices ());
-	// Return indicies of inliers from fitted line with most inliers
+	// Return indicies of inliers from fitted plane with most inliers
 	for (unsigned int i=0; i<cloud->size(); ++i){
 		if (getDistance(bestPlane, cloud->at(i)) <= distanceThreshold ){
             inliers->indices.push_back(int(i));
