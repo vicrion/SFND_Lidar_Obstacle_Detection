@@ -89,8 +89,8 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr &viewer,
     }
 
     auto filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.35,
-                                                      Eigen::Vector4f(-18, -6, -2, 1), 
-                                                      Eigen::Vector4f(30, 6, 1, 1));
+                                                      Eigen::Vector4f(-18, -7, -2, 1), 
+                                                      Eigen::Vector4f(30, 7, 1, 1));
     // renderPointCloud(viewer, filteredCloud, "inputCloud");
 
     // separate road plane from anything else using 3d ransac

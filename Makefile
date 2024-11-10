@@ -25,6 +25,6 @@ build: .FORCE
 APP.BIN=$(BUILD.DIR)/environment
 run: .FORCE
 	export LD_LIBRARY_PATH=$(BASE.DIR)/vcpkg_installed/$(TRIPLET.NAME)/lib:$(BASE.DIR)/vcpkg_installed/$(TRIPLET.NAME)/debug/lib:$(INSTALL.DIR)/lib && \
-	$(APP.BIN)
+	cd $(BUILD.DIR) && $(APP.BIN)
 
 .FORCE:
