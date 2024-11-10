@@ -22,7 +22,6 @@ endif()
 find_package(PCL REQUIRED COMPONENTS common io visualization segmentation)
 find_package(Boost COMPONENTS filesystem REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(fmt REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 include_directories(${PCL_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -35,7 +34,6 @@ target_link_libraries (environment
     ${PCL_LIBRARIES} 
     ${Boost_LIBRARIES} 
     spdlog::spdlog
-    fmt::fmt
     Eigen3::Eigen
 )
 
